@@ -1,0 +1,27 @@
+name = "fpl-matchweek-analyst"
+main = "worker/src/index.js"
+compatibility_date = "2024-10-01"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+
+[site]
+bucket = "./frontend"
+
+[[kv_namespaces]]
+binding = "FPL_CACHE"
+id = "FPL_CACHE_DEV"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "FPL_DIARY"
+database_id = "FPL_DIARY_DEV"
+
+[ai]
+binding = "AI"
+
+[[workflows]]
+name = "analyze"
+binding = "ANALYZE_WORKFLOW"
+class_name = "AnalyzeWorkflow"
+script = "worker/workflows/analyze.js"
+
