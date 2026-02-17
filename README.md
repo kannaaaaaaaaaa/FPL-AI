@@ -1,110 +1,218 @@
 # FPL Matchweek Analyst
 
-Cloudflare Workers + Pages playground that orchestrates FPL data, Llama 3.3 reasoning, and diary-like outputs for each gameweek.
+A Cloudflare Workers + Pages application that analyzes Fantasy Premier League performance by combining official FPL data with AI-powered insights from Meta Llama 3.3.
 
-## What’s Inside
+## Overview
 
-- **Frontend (`/frontend`)** – Minimal HTML/CSS/JS surface rendered via Cloudflare Pages. Lets managers paste notes, call the backend, and view the three required result blocks.
-- **Worker (`/worker`)** – Handles API routes, kicks off the Cloudflare Workflow, and exposes helpers for prompt building, FPL data fetching, and storage.
-- **Workflow (`/worker/workflows/analyze.js`)** – Stubbed multi-step pipeline that caches FPL data, merges user notes, calls Workers AI (Meta Llama 3.3), and persists the summarized output.
-- **Storage (`/db/schema.sql`)** – D1 table definition for saving each analysis record.
-- **Config (`wrangler.toml`)** – Declares the Worker, Workflow binding, D1 + KV resources, and Workers AI binding.
+This application orchestrates a multi-step workflow that:
+1. Fetches FPL manager data and gameweek statistics
+2. Merges official stats with user notes
+3. Generates structured AI analysis
+4. Persists results for historical review
 
-## Requirements
+## Tech Stack
 
-1. Node 18+ (for local tooling) and the latest `wrangler`.
-2. Cloudflare account with Workers AI, D1 beta, Workflows beta, and Workers KV enabled.
+- **Cloudflare Workers** – Backend API and request handling
+- **Cloudflare Workflows** – Multi-step orchestration
+- **Cloudflare Workers AI** – Meta Llama 3.3 for analysis
+- **Cloudflare D1** – SQLite database for persisted analyses
+- **Cloudflare KV** – Caching layer for FPL API responses
+- **Cloudflare Pages** – Frontend hosting (vanilla HTML/CSS/JS)
+
+## Repository Structure
+
+```
+FPL Matchweek Analyst/
+├── frontend/              # Static HTML/CSS/JS frontend
+│   ├── index.html
+│   └── app.js
+├── worker/
+│   ├── src/
+│   │   └── index.js      # Worker entry point and API routes
+│   ├── workflows/
+│   │   └── analyze.js    # Workflow orchestration
+│   └── utils/
+│       ├── fpl.js        # FPL API integration
+│       ├── prompt.js     # AI prompt and schema definitions
+│       └── storage.js    # D1 database operations
+├── db/
+│   └── schema.sql        # D1 database schema
+├── wrangler.toml         # Cloudflare configuration
+└── package.json
+```
+
+## Prerequisites
+
+- Node.js 18+
+- Wrangler CLI (`npm install -g wrangler`)
+- Cloudflare account with access to:
+  - Workers & Workers AI
+  - Workflows (beta)
+  - D1 Database (beta)
+  - Workers KV
 
 ## Getting Started
 
+### 1. Install Dependencies
+
 ```bash
-pnpm install # or npm install
-wrangler d1 execute FPL_DIARY --file=./db/schema.sql
-wrangler dev
+npm install
 ```
 
-During development, Cloudflare Pages can serve `/frontend`. Point local previews (or deployed Pages) to the Worker origin defined in `wrangler.toml`.
+### 2. Configure Cloudflare Resources
+
+Login to Cloudflare:
+```bash
+wrangler login
+```
+
+Create KV namespace and D1 database:
+```bash
+wrangler kv namespace create FPL_CACHE
+wrangler d1 create fpl_analyses
+```
+
+Update `wrangler.toml` with the generated binding IDs.
+
+### 3. Initialize Database
+
+```bash
+wrangler d1 execute fpl_analyses --file=./FPL\ Matchweek\ Analyst/db/schema.sql
+```
+
+### 4. Develop Locally
+
+```bash
+npm run dev
+```
+
+This starts the Worker with local bindings and serves the frontend at `http://localhost:8787`.
+
+### 5. Deploy to Production
+
+```bash
+npm run deploy
+```
+
+## API Reference
+
+### POST /analyze
+
+Initiates analysis workflow for a manager's gameweek.
+
+**Request:**
+```json
+{
+  "managerId": "string",
+  "gameweek": number,
+  "notes": "string (optional)"
+}
+```
+
+**Response:**
+```json
+{
+  "message": "Workflow accepted",
+  "executionId": "string"
+}
+```
+
+### GET /gameweek/:id
+
+Retrieves stored analysis by composite ID (`{managerId}-{gameweek}`).
+
+**Response:**
+```json
+{
+  "id": "string",
+  "managerId": "string",
+  "gameweek": number,
+  "executionId": "string",
+  "status": "pending|running|completed|failed",
+  "result": {...},
+  "createdAt": "timestamp",
+  "completedAt": "timestamp"
+}
+```
+
+### GET /execution/:id
+
+Retrieves workflow execution status by execution ID.
+
+**Response:**
+```json
+{
+  "id": "string",
+  "managerId": "string",
+  "gameweek": number,
+  "result": {
+    "gameweek_review": {...},
+    "tactical_form_takeaways": [...],
+    "transfer_recommendations": [...]
+  },
+  "createdAt": "timestamp",
+  "updatedAt": "timestamp"
+}
+```
 
 ## Environment Bindings
 
 | Binding | Type | Purpose |
-| --- | --- | --- |
-| `DB` | D1 | Stores each GW analysis row |
-| `FPL_CACHE` | Workers KV | Caches bootstrap, fixtures, and per-player summaries |
-| `AI` | Workers AI | Accesses Meta Llama 3.3 |
-| `ANALYZE_WORKFLOW` | Workflow | Multi-step orchestration entrypoint |
+|---------|------|---------|
+| `DB` | D1 Database | Stores analysis records |
+| `FPL_CACHE` | KV Namespace | Caches FPL API responses |
+| `AI` | Workers AI | Meta Llama 3.3 inference |
+| `ANALYZE_WORKFLOW` | Workflow | Orchestration binding |
 
-## Next Steps
+## Current Status
 
-- Flesh out `worker/utils/fpl.js` to fetch and normalize real FPL API data.
-- Implement schema-aware prompt construction plus validation for the AI output.
-- Persist real workflow artifacts and expose meaningful statuses over `/gw/:id`.
-# FPL Matchweek Analyst
+**Phase 1 Complete** - Core contract and data foundation stabilized.
 
-Cloudflare Workers + Pages scaffold that pairs official Fantasy Premier League data with Meta Llama 3.3 via Workers AI. The goal is to orchestrate a repeatable four-step workflow that collects GW data, merges user diary notes, runs structured LLM reasoning, and saves a three-block analysis that fans can revisit later.
+### Implemented Features
+- ✅ Workflow orchestration with execution tracking
+- ✅ Comprehensive FPL API integration:
+  - Manager data (team, history, picks)
+  - Player statistics and summaries
+  - Fixtures and gameweek data
+  - Enriched picks with player details
+- ✅ AI-powered analysis with Llama 3.3
+- ✅ Schema validation and auto-repair
+- ✅ D1 persistence with execution metadata
+- ✅ Status tracking (pending → running → completed/failed)
+- ✅ Performance metrics (tokens, latency)
+- ✅ Consistent naming (gameweek everywhere)
+- ✅ Frontend polling interface
 
-## Tech Stack
-- Cloudflare Workers (backend API) and Workflows (multi-step orchestration)
-- Cloudflare Workers AI (Meta Llama 3.3)
-- Cloudflare D1 for persisting completed analyses
-- Cloudflare KV for caching FPL API payloads
-- Cloudflare Pages frontend (vanilla HTML/JS)
+### Metadata Captured
+Each analysis now tracks:
+- Execution ID and status
+- Start/completion timestamps
+- AI model and token usage
+- Latency metrics
+- Input snapshots for debugging
+- Raw AI output before validation
+- Error messages on failure
 
-## Repository Layout
-`
-/frontend         → Cloudflare Pages UI (notes input + results)
-/worker           → Worker entry point, workflow, utils
-/db               → D1 schema definition
-wrangler.toml     → Cloudflare environment configuration
-package.json      → npm scripts and metadata
-`
+## Roadmap
 
-## Prerequisites
-- Node 18+
-- 
-pm install -g wrangler (or run via npx)
-- Cloudflare account with Workers, Workflows, D1, and KV enabled
+**Phase 2 - Workflow Reliability** ✅ Complete
+- ✅ Add retries with exponential backoff for FPL/AI calls
+- ✅ Implement request timeouts
+- ✅ Add workflow status endpoint (GET /execution/:id)
+- ✅ Improve error classification and handling
+- ✅ Circuit breaker pattern for external APIs
 
-## Getting Started
-1. Install dependencies (just wrangler scripts today):
-   `
-   npm install
-   `
-2. Login to Cloudflare and create resources:
-   `
-   wrangler login
-   wrangler kv namespace create FPL_CACHE
-   wrangler d1 create fpl_analyses
-   `
-   Update the generated binding IDs inside wrangler.toml if they differ.
-3. Apply the schema:
-   `
-   wrangler d1 execute fpl_analyses --file=./db/schema.sql
-   `
-4. Develop locally (Pages + Worker):
-   `
-   npm run dev
-   `
-   This runs wrangler dev for the worker and serves the frontend static assets via the built-in dev server.
-5. Deploy:
-   `
-   npm run deploy
-   `
+**Phase 3 - Frontend Productization** ✅ Complete
+- ✅ Status-aware polling with execution ID
+- ✅ Structured rendering for analysis blocks
+- ✅ Loading states and retry UX
+- ✅ Professional styling and responsive design
+- ✅ Input validation and error recovery
 
-## API Overview
-- POST /analyze → kicks off the workflow. Body accepts { managerId, gw, notes }.
-- GET /gw/:id → fetches the saved analysis JSON from D1.
+**Phase 4 - Quality & Operations** (Next)
 
-## Workflow Steps
-1. Fetch & cache bootstrap, fixtures, and any player element summaries.
-2. Merge user notes with key stats per positional block.
-3. Call Meta Llama 3.3 with the system prompt in worker/utils/prompt.js and the structured schema.
-4. Persist the final object to D1 and expose the record ID.
-
-All heavy lifting is stubbed with placeholder calls today, so you can focus on customizing prompts, data shaping, and UI polish next.
-
-## Next Up
-- Implement real FPL API calls + caching logic.
-- Build the structured prompt and validation for Llama outputs.
-- Expand the frontend visuals and add authentication if needed.
-- Add tests/linting when the core features stabilize.
+- [ ] Unit tests for validation and FPL parsing
+- [ ] Integration tests for workflow
+- [ ] CI/CD pipeline
+- [ ] Observability (logging, error monitoring)
+- [ ] Deployment automation

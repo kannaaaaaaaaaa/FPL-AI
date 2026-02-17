@@ -110,3 +110,275 @@ button:disabled {
   opacity: 1;
 }
 
+/* Structured Rendering Styles */
+
+/* Gameweek Review */
+.review-section {
+  display: grid;
+  gap: 1rem;
+}
+
+.captain-verdict {
+  padding: 1rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 0.75rem;
+}
+
+.captain-verdict h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+}
+
+.captain-verdict p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.performers {
+  padding: 1rem;
+  border-radius: 0.75rem;
+  border-left: 4px solid;
+}
+
+.performers.top {
+  background: #0d2818;
+  border-left-color: #00b894;
+}
+
+.performers.honorable {
+  background: #2a2510;
+  border-left-color: #fdcb6e;
+}
+
+.performers.under {
+  background: #2a1012;
+  border-left-color: #d63031;
+}
+
+.performers h3 {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.95rem;
+  color: #9fb0c6;
+}
+
+.performers ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.performers li {
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.performers li:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.performers strong {
+  display: block;
+  font-size: 1.05rem;
+  margin-bottom: 0.25rem;
+  color: #f4f7ff;
+}
+
+.performers p {
+  margin: 0.25rem 0 0 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #d8e3f4;
+}
+
+/* Tactical Takeaways */
+.takeaways-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.takeaway-item {
+  padding: 1rem;
+  background: #0e1624;
+  border-radius: 0.75rem;
+  border-left: 4px solid #24344e;
+}
+
+.takeaway-item.actionable {
+  border-left-color: #00dfd8;
+  background: #0b1a1a;
+}
+
+.takeaway-item h4 {
+  margin: 0 0 0.5rem 0;
+  color: #9fb0c6;
+  font-size: 0.95rem;
+}
+
+.takeaway-item p {
+  margin: 0;
+  line-height: 1.5;
+  font-size: 0.9rem;
+  color: #d8e3f4;
+}
+
+/* Transfer Recommendations */
+.transfers-container {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.transfer-section h3 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #9fb0c6;
+}
+
+.transfer-section ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.transfer-section li {
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  background: #0e1624;
+  border-radius: 0.75rem;
+  border-left: 4px solid;
+}
+
+.transfer-section.in li {
+  border-left-color: #00b894;
+}
+
+.transfer-section.out li {
+  border-left-color: #d63031;
+}
+
+.transfer-section.hold li {
+  border-left-color: #fdcb6e;
+}
+
+.player-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.player-info strong {
+  font-size: 1.05rem;
+  color: #f4f7ff;
+}
+
+.player-info .position {
+  padding: 0.2rem 0.6rem;
+  background: #24344e;
+  color: #00dfd8;
+  border-radius: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.player-info .price {
+  padding: 0.2rem 0.6rem;
+  background: #18253a;
+  border: 1px solid #24344e;
+  border-radius: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #9fb0c6;
+}
+
+.player-info .badge {
+  padding: 0.2rem 0.6rem;
+  border-radius: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.badge.priority {
+  background: #fdcb6e;
+  color: #05080d;
+}
+
+.badge.urgency {
+  background: #d63031;
+  color: #f4f7ff;
+}
+
+.priority-high {
+  box-shadow: 0 0 0 2px #d63031;
+}
+
+.priority-medium {
+  box-shadow: 0 0 0 2px #fdcb6e;
+}
+
+.urgency-immediate {
+  box-shadow: 0 0 0 2px #d63031;
+}
+
+.urgency-soon {
+  box-shadow: 0 0 0 2px #fdcb6e;
+}
+
+.transfer-section p {
+  margin: 0;
+  line-height: 1.5;
+  font-size: 0.9rem;
+  color: #d8e3f4;
+}
+
+/* Loading state enhancements */
+.status.loading {
+  color: #00dfd8;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* Results article headers */
+.results h2 {
+  color: #f4f7ff;
+  font-size: 1.3rem;
+  margin: 0 0 1rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #00dfd8;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  body {
+    padding: 1rem;
+  }
+
+  .app-shell {
+    gap: 1.5rem;
+  }
+
+  .player-info {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .results h2 {
+    font-size: 1.1rem;
+  }
+}
+
