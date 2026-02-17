@@ -1,11 +1,15 @@
 import { getAnalysisRecord } from "../utils/storage.js";
 import { SYSTEM_PROMPT } from "../utils/prompt.js";
+import { AnalyzeWorkflow } from "../workflows/analyze.js";
 
 const json = (data, init = {}) =>
   new Response(JSON.stringify(data, null, 2), {
     headers: { "Content-Type": "application/json" },
     ...init,
   });
+
+// Export the workflow
+export { AnalyzeWorkflow };
 
 export default {
   async fetch(request, env, ctx) {

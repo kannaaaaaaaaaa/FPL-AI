@@ -9,19 +9,19 @@ bucket = "./frontend"
 
 [[kv_namespaces]]
 binding = "FPL_CACHE"
-id = "FPL_CACHE_DEV"
+id = "0e6b6babea6a4f7ca5d872a0d797e04c"
 
 [[d1_databases]]
 binding = "DB"
 database_name = "FPL_DIARY"
-database_id = "FPL_DIARY_DEV"
+database_id = "a8a69774-6f7c-4300-84c1-91335445e858"
 
 [ai]
 binding = "AI"
 
 [[workflows]]
-name = "analyze"
+name = "analyze-workflow"
 binding = "ANALYZE_WORKFLOW"
 class_name = "AnalyzeWorkflow"
-script = "worker/workflows/analyze.js"
+script_name = "fpl-matchweek-analyst"
 

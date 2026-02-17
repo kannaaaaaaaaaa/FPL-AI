@@ -1,4 +1,4 @@
-import { WorkflowEntrypoint, WorkflowEvent } from "cloudflare:workers";
+import { WorkflowEntrypoint } from "cloudflare:workers";
 import { getAnalysisContext } from "../utils/fpl.js";
 import { createAnalysisRecord, updateAnalysisStatus } from "../utils/storage.js";
 import { SYSTEM_PROMPT, validateOutput, repairOutput } from "../utils/prompt.js";

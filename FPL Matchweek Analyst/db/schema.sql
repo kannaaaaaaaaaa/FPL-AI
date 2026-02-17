@@ -23,12 +23,12 @@ CREATE TABLE IF NOT EXISTS gameweek_analysis (
   -- Input/Output artifacts
   input_snapshot TEXT DEFAULT '{}',  -- Original request data
   raw_ai_output TEXT,                -- Unparsed AI response
-  payload TEXT DEFAULT '{}',         -- Final validated output
-
-  -- Indices
-  INDEX idx_manager_gameweek (manager_id, gameweek),
-  INDEX idx_execution_id (execution_id),
-  INDEX idx_status (status),
-  INDEX idx_created_at (created_at)
+  payload TEXT DEFAULT '{}'          -- Final validated output
 );
+
+-- Indices for query performance
+CREATE INDEX IF NOT EXISTS idx_manager_gameweek ON gameweek_analysis(manager_id, gameweek);
+CREATE INDEX IF NOT EXISTS idx_execution_id ON gameweek_analysis(execution_id);
+CREATE INDEX IF NOT EXISTS idx_status ON gameweek_analysis(status);
+CREATE INDEX IF NOT EXISTS idx_created_at ON gameweek_analysis(created_at);
 
