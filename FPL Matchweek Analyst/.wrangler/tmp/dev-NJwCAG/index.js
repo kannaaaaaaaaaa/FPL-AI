@@ -1634,6 +1634,12 @@ var json = /* @__PURE__ */ __name((data, init = {}) => new Response(JSON.stringi
 var src_default = {
   async fetch(request, env2, ctx) {
     const url = new URL(request.url);
+    const isApiRoute = url.pathname.startsWith("/analyze") || url.pathname.startsWith("/gameweek/") || url.pathname.startsWith("/execution/");
+    if (!isApiRoute) {
+      if (env2.ASSETS?.fetch) {
+        return env2.ASSETS.fetch(request);
+      }
+    }
     if (request.method === "POST" && url.pathname === "/analyze") {
       const body = await request.json().catch(() => ({}));
       const { managerId, gameweek, notes } = body;
@@ -1667,13 +1673,22 @@ var src_default = {
         if (!execution) {
           return json({ error: "Execution not found" }, { status: 404 });
         }
+        const statusMap = {
+          complete: "completed",
+          errored: "failed",
+          terminated: "failed",
+          paused: "running",
+          unknown: "running"
+        };
+        const normalizedStatus = statusMap[execution.status] || execution.status;
         const records = await env2.DB.prepare(
           `SELECT * FROM gameweek_analysis WHERE execution_id = ?1 LIMIT 1`
         ).bind(executionId).all();
         const record = records.results?.[0];
         return json({
           executionId: execution.id,
-          status: execution.status,
+          status: normalizedStatus,
+          rawStatus: execution.status,
           createdAt: execution.createdAt,
           analysis: record ? {
             id: record.id,
@@ -1741,7 +1756,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env2, _ctx, middlewareCtx
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// .wrangler/tmp/bundle-JvsE9n/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-3S68uV/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -1773,7 +1788,7 @@ function __facade_invoke__(request, env2, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// .wrangler/tmp/bundle-JvsE9n/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-3S68uV/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;

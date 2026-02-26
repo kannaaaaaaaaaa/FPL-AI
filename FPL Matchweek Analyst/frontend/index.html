@@ -1,49 +1,114 @@
 <!DOCTYPE html>
-<html lang=\"en\">
+<html lang="en">
   <head>
-    <meta charset=\"UTF-8\" />
-    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />
-    <title>FPL Matchweek Analyst</title>
-    <link rel=\"stylesheet\" href=\"./styles.css\" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FPL INTEL — Matchweek Analyst</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <main class=\"app-shell\">
-      <header>
-        <h1>FPL Matchweek Analyst</h1>
-        <p>Paste your gameweek diary notes, then let the Worker + Llama summarize the week.</p>
+    <div class="scanlines" aria-hidden="true"></div>
+
+    <main class="app-shell">
+      <!-- ── HEADER ── -->
+      <header class="site-header">
+        <div class="header-inner">
+          <div class="logo">
+            <span class="logo-mark">⚡</span>
+            <div class="logo-text">
+              <h1>FPL INTEL</h1>
+              <p class="tagline">// MATCHWEEK ANALYST · AI POWERED</p>
+            </div>
+          </div>
+          <div class="sys-status">
+            <span class="pulse-dot"></span>
+            <span>SYS ONLINE</span>
+          </div>
+        </div>
       </header>
 
-      <section class=\"input-panel\">
-        <label for=\"managerId\">Manager ID</label>
-        <input id=\"managerId\" type=\"text\" placeholder=\"123456\" />
+      <!-- ── BODY ── -->
+      <div class="layout">
 
-        <label for=\"gameweek\">Gameweek</label>
-        <input id=\"gameweek\" type=\"number\" min=\"1\" max=\"38\" />
+        <!-- SIDEBAR: INPUT PANEL -->
+        <aside class="control-panel">
+          <div class="panel-label">// SCAN INPUT</div>
 
-        <label for=\"notes\">Your notes</label>
-        <textarea id=\"notes\" rows=\"8\" placeholder=\"Captaincy regrets, transfer plans, vibes...\"></textarea>
+          <div class="input-group">
+            <label for="managerId">MANAGER ID</label>
+            <input id="managerId" type="text" placeholder="e.g. 123456" autocomplete="off" spellcheck="false" />
+          </div>
 
-        <button id=\"analyzeBtn\">Analyze Gameweek</button>
-        <p id=\"status\" class=\"status\"></p>
-        <p id=\"diaryIndicator\" class=\"diary-indicator\">Saved to diary</p>
-      </section>
+          <div class="input-group">
+            <label for="gameweek">GAMEWEEK</label>
+            <input id="gameweek" type="number" min="1" max="38" placeholder="01" />
+          </div>
 
-      <section class=\"results\">
-        <article>
-          <h2>Gameweek Review</h2>
-          <div id=\"gameweekReview\" class=\"result-block\">No review yet.</div>
-        </article>
-        <article>
-          <h2>Tactical/Form Takeaways</h2>
-          <div id=\"takeaways\" class=\"result-block\">No takeaways yet.</div>
-        </article>
-        <article>
-          <h2>Transfer Recommendations</h2>
-          <div id=\"transfers\" class=\"result-block\">No recommendations yet.</div>
-        </article>
-      </section>
+          <div class="input-group">
+            <label for="notes">
+              FIELD NOTES <span class="dim-label">[OPTIONAL]</span>
+            </label>
+            <textarea
+              id="notes"
+              rows="6"
+              placeholder="Captaincy regrets, gut feelings, transfer plans..."
+            ></textarea>
+          </div>
+
+          <button id="analyzeBtn" class="scan-btn">
+            <span class="btn-chevron">▶</span>
+            <span id="btnText">RUN ANALYSIS</span>
+          </button>
+
+          <p id="status" class="status-line"></p>
+          <p id="diaryIndicator" class="saved-tag">✓ INTEL SAVED</p>
+        </aside>
+
+        <!-- MAIN: INTEL CARDS -->
+        <section class="intel-grid">
+
+          <div class="intel-card" id="card-review">
+            <div class="card-header">
+              <span class="card-index">01</span>
+              <h2>GAMEWEEK DEBRIEF</h2>
+              <span class="card-ping" id="ping-review">STANDBY</span>
+            </div>
+            <div id="gameweekReview" class="card-body">
+              <p class="idle-msg">// Awaiting analysis run</p>
+            </div>
+          </div>
+
+          <div class="intel-card" id="card-tactics">
+            <div class="card-header">
+              <span class="card-index">02</span>
+              <h2>TACTICAL INTEL</h2>
+              <span class="card-ping" id="ping-tactics">STANDBY</span>
+            </div>
+            <div id="takeaways" class="card-body">
+              <p class="idle-msg">// Awaiting analysis run</p>
+            </div>
+          </div>
+
+          <div class="intel-card" id="card-transfers">
+            <div class="card-header">
+              <span class="card-index">03</span>
+              <h2>TRANSFER OPS</h2>
+              <span class="card-ping" id="ping-transfers">STANDBY</span>
+            </div>
+            <div id="transfers" class="card-body">
+              <p class="idle-msg">// Awaiting analysis run</p>
+            </div>
+          </div>
+
+        </section>
+      </div>
     </main>
 
-    <script src=\"./app.js\" type=\"module\"></script>
+    <script src="./app.js" type="module"></script>
   </body>
 </html>

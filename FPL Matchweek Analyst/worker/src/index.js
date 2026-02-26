@@ -15,6 +15,17 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
+    // Handle API routes first
+    const isApiRoute = url.pathname.startsWith("/analyze") ||
+                       url.pathname.startsWith("/gameweek/") ||
+                       url.pathname.startsWith("/execution/");
+
+    if (!isApiRoute) {
+      if (env.ASSETS?.fetch) {
+        return env.ASSETS.fetch(request);
+      }
+    }
+
     if (request.method === "POST" && url.pathname === "/analyze") {
       const body = await request.json().catch(() => ({}));
       const { managerId, gameweek, notes } = body;
@@ -59,6 +70,17 @@ export default {
           return json({ error: "Execution not found" }, { status: 404 });
         }
 
+        // Normalize Cloudflare Workflow statuses to our standard statuses
+        // CF returns: running, complete, paused, errored, terminated, unknown
+        const statusMap = {
+          complete: "completed",
+          errored: "failed",
+          terminated: "failed",
+          paused: "running",
+          unknown: "running",
+        };
+        const normalizedStatus = statusMap[execution.status] || execution.status;
+
         // Also fetch the analysis record if available
         const records = await env.DB.prepare(
           `SELECT * FROM gameweek_analysis WHERE execution_id = ?1 LIMIT 1`
@@ -68,7 +90,8 @@ export default {
 
         return json({
           executionId: execution.id,
-          status: execution.status,
+          status: normalizedStatus,
+          rawStatus: execution.status,
           createdAt: execution.createdAt,
           analysis: record ? {
             id: record.id,
@@ -95,4 +118,3 @@ export default {
     });
   },
 };
-

@@ -4,8 +4,9 @@ compatibility_date = "2024-10-01"
 compatibility_flags = ["nodejs_compat"]
 workers_dev = true
 
-[site]
-bucket = "./frontend"
+[assets]
+directory = "./frontend"
+binding = "ASSETS"
 
 [[kv_namespaces]]
 binding = "FPL_CACHE"

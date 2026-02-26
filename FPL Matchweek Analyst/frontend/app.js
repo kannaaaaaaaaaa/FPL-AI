@@ -1,38 +1,55 @@
 const apiBase = import.meta?.env?.VITE_API_BASE ?? window.API_BASE ?? "";
-const POLL_INTERVAL_MS = 2000; // 2 seconds
-const MAX_POLL_ATTEMPTS = 30; // 1 minute total
+const POLL_INTERVAL_MS = 2000;
+const MAX_POLL_ATTEMPTS = 30;
 const BACKOFF_MULTIPLIER = 1.2;
 
-const managerInput = document.getElementById("managerId");
-const gameweekInput = document.getElementById("gameweek");
-const notesInput = document.getElementById("notes");
-const analyzeBtn = document.getElementById("analyzeBtn");
-const statusEl = document.getElementById("status");
-const diaryIndicator = document.getElementById("diaryIndicator");
+const managerInput    = document.getElementById("managerId");
+const gameweekInput   = document.getElementById("gameweek");
+const notesInput      = document.getElementById("notes");
+const analyzeBtn      = document.getElementById("analyzeBtn");
+const btnText         = document.getElementById("btnText");
+const statusEl        = document.getElementById("status");
+const diaryIndicator  = document.getElementById("diaryIndicator");
 const gameweekReviewEl = document.getElementById("gameweekReview");
-const takeawaysEl = document.getElementById("takeaways");
-const transfersEl = document.getElementById("transfers");
+const takeawaysEl     = document.getElementById("takeaways");
+const transfersEl     = document.getElementById("transfers");
+const pingReview      = document.getElementById("ping-review");
+const pingTactics     = document.getElementById("ping-tactics");
+const pingTransfers   = document.getElementById("ping-transfers");
 
-function setLoading(isLoading, message = "", showSpinner = true) {
+function setPings(state) {
+  [pingReview, pingTactics, pingTransfers].forEach(el => {
+    el.className = "card-ping";
+    if (state === "live") { el.textContent = "SCANNING"; el.classList.add("live"); }
+    else if (state === "done") { el.textContent = "LOADED"; el.classList.add("done"); }
+    else if (state === "fail") { el.textContent = "ERROR"; el.classList.add("fail"); }
+    else { el.textContent = "STANDBY"; }
+  });
+}
+
+function setLoading(isLoading, message = "") {
   analyzeBtn.disabled = isLoading;
-  statusEl.textContent = showSpinner && isLoading ? `⏳ ${message}` : message;
+  btnText.textContent = isLoading ? "SCANNING..." : "RUN ANALYSIS";
+  statusEl.textContent = message;
   statusEl.classList.toggle("error", false);
   statusEl.classList.toggle("loading", isLoading);
 }
 
 function showError(message, canRetry = false) {
-  statusEl.textContent = `❌ ${message}`;
+  statusEl.textContent = `// ERR: ${message}`;
   statusEl.classList.add("error");
   statusEl.classList.remove("loading");
   analyzeBtn.disabled = false;
-  analyzeBtn.textContent = canRetry ? "Retry Analysis" : "Analyze Gameweek";
+  btnText.textContent = canRetry ? "RETRY" : "RUN ANALYSIS";
+  setPings("fail");
 }
 
 function showSuccess(message) {
-  statusEl.textContent = `✅ ${message}`;
+  statusEl.textContent = `// ${message}`;
   statusEl.classList.remove("error", "loading");
   analyzeBtn.disabled = false;
-  analyzeBtn.textContent = "Analyze Gameweek";
+  btnText.textContent = "RUN ANALYSIS";
+  setPings("done");
 }
 
 /**
@@ -254,11 +271,11 @@ async function pollExecution(executionId, attempt = 0) {
 
     // Still running - update status and retry
     const statusMessages = {
-      pending: "Queued...",
-      running: data.analysis?.status === "running" ? "Analyzing..." : "Starting...",
+      pending: "// Queued in workflow...",
+      running: data.analysis?.status === "running" ? "// AI analysis in progress..." : "// Workflow starting...",
     };
 
-    setLoading(true, statusMessages[data.status] || "Processing...");
+    setLoading(true, statusMessages[data.status] || "// Processing...");
 
     if (attempt >= MAX_POLL_ATTEMPTS) {
       throw new Error("Analysis timed out. Please try again.");
@@ -297,8 +314,9 @@ async function analyze() {
     return;
   }
 
-  setLoading(true, "Submitting request...");
+  setLoading(true, "// Initiating scan...");
   diaryIndicator.classList.remove("visible");
+  setPings("live");
   clearResults();
 
   try {
@@ -320,7 +338,7 @@ async function analyze() {
       throw new Error("No execution ID returned");
     }
 
-    setLoading(true, "Analysis started...");
+    setLoading(true, "// Workflow started, awaiting intel...");
 
     // Poll for completion
     const analysis = await pollExecution(executionId);
@@ -329,7 +347,7 @@ async function analyze() {
     if (analysis && analysis.result) {
       renderResults(analysis.result);
       diaryIndicator.classList.add("visible");
-      showSuccess("Analysis complete!");
+      showSuccess("Intel acquired. Analysis complete.");
     } else {
       throw new Error("No analysis data received");
     }
@@ -346,9 +364,10 @@ async function analyze() {
 }
 
 function clearResults() {
-  gameweekReviewEl.textContent = "Waiting for analysis...";
-  takeawaysEl.textContent = "Waiting for analysis...";
-  transfersEl.textContent = "Waiting for analysis...";
+  const idle = '<p class="idle-msg">// Awaiting analysis run</p>';
+  gameweekReviewEl.innerHTML = idle;
+  takeawaysEl.innerHTML = idle;
+  transfersEl.innerHTML = idle;
 }
 
 analyzeBtn.addEventListener("click", analyze);

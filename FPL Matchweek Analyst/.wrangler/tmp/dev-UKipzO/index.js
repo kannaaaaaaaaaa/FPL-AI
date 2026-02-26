@@ -1,7 +1,7 @@
 var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 
-// node_modules/unenv/dist/runtime/_internal/utils.mjs
+// ../../../../AppData/Roaming/npm/node_modules/wrangler/node_modules/unenv/dist/runtime/_internal/utils.mjs
 // @__NO_SIDE_EFFECTS__
 function createNotImplementedError(name) {
   return new Error(`[unenv] ${name} is not implemented yet!`);
@@ -26,7 +26,7 @@ function notImplementedClass(name) {
 }
 __name(notImplementedClass, "notImplementedClass");
 
-// node_modules/unenv/dist/runtime/node/internal/perf_hooks/performance.mjs
+// ../../../../AppData/Roaming/npm/node_modules/wrangler/node_modules/unenv/dist/runtime/node/internal/perf_hooks/performance.mjs
 var _timeOrigin = globalThis.performance?.timeOrigin ?? Date.now();
 var _performanceNow = globalThis.performance?.now ? globalThis.performance.now.bind(globalThis.performance) : () => Date.now() - _timeOrigin;
 var nodeTiming = {
@@ -264,7 +264,7 @@ var PerformanceObserver = class {
 };
 var performance = globalThis.performance && "addEventListener" in globalThis.performance ? globalThis.performance : new Performance();
 
-// node_modules/@cloudflare/unenv-preset/dist/runtime/polyfill/performance.mjs
+// ../../../../AppData/Roaming/npm/node_modules/wrangler/node_modules/@cloudflare/unenv-preset/dist/runtime/polyfill/performance.mjs
 globalThis.performance = performance;
 globalThis.Performance = Performance;
 globalThis.PerformanceEntry = PerformanceEntry;
@@ -274,14 +274,14 @@ globalThis.PerformanceObserver = PerformanceObserver;
 globalThis.PerformanceObserverEntryList = PerformanceObserverEntryList;
 globalThis.PerformanceResourceTiming = PerformanceResourceTiming;
 
-// node_modules/unenv/dist/runtime/node/console.mjs
+// ../../../../AppData/Roaming/npm/node_modules/wrangler/node_modules/unenv/dist/runtime/node/console.mjs
 import { Writable } from "node:stream";
 
-// node_modules/unenv/dist/runtime/mock/noop.mjs
+// ../../../../AppData/Roaming/npm/node_modules/wrangler/node_modules/unenv/dist/runtime/mock/noop.mjs
 var noop_default = Object.assign(() => {
 }, { __unenv__: true });
 
-// node_modules/unenv/dist/runtime/node/console.mjs
+// ../../../../AppData/Roaming/npm/node_modules/wrangler/node_modules/unenv/dist/runtime/node/console.mjs
 var _console = globalThis.console;
 var _ignoreErrors = true;
 var _stderr = new Writable();
@@ -313,7 +313,7 @@ var _times = /* @__PURE__ */ new Map();
 var _stdoutErrorHandler = noop_default;
 var _stderrErrorHandler = noop_default;
 
-// node_modules/@cloudflare/unenv-preset/dist/runtime/node/console.mjs
+// ../../../../AppData/Roaming/npm/node_modules/wrangler/node_modules/@cloudflare/unenv-preset/dist/runtime/node/console.mjs
 var workerdConsole = globalThis["console"];
 var {
   assert,
@@ -354,10 +354,10 @@ Object.assign(workerdConsole, {
 });
 var console_default = workerdConsole;
 
-// node_modules/wrangler/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-console
+// ../../../../AppData/Roaming/npm/node_modules/wrangler/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-console
 globalThis.console = console_default;
 
-// node_modules/unenv/dist/runtime/node/internal/process/hrtime.mjs
+// ../../../../AppData/Roaming/npm/node_modules/wrangler/node_modules/unenv/dist/runtime/node/internal/process/hrtime.mjs
 var hrtime = /* @__PURE__ */ Object.assign(/* @__PURE__ */ __name(function hrtime2(startTime) {
   const now = Date.now();
   const seconds = Math.trunc(now / 1e3);
@@ -376,10 +376,10 @@ var hrtime = /* @__PURE__ */ Object.assign(/* @__PURE__ */ __name(function hrtim
   return BigInt(Date.now() * 1e6);
 }, "bigint") });
 
-// node_modules/unenv/dist/runtime/node/internal/process/process.mjs
+// ../../../../AppData/Roaming/npm/node_modules/wrangler/node_modules/unenv/dist/runtime/node/internal/process/process.mjs
 import { EventEmitter } from "node:events";
 
-// node_modules/unenv/dist/runtime/node/internal/tty/read-stream.mjs
+// ../../../../AppData/Roaming/npm/node_modules/wrangler/node_modules/unenv/dist/runtime/node/internal/tty/read-stream.mjs
 var ReadStream = class {
   static {
     __name(this, "ReadStream");
@@ -396,7 +396,7 @@ var ReadStream = class {
   }
 };
 
-// node_modules/unenv/dist/runtime/node/internal/tty/write-stream.mjs
+// ../../../../AppData/Roaming/npm/node_modules/wrangler/node_modules/unenv/dist/runtime/node/internal/tty/write-stream.mjs
 var WriteStream = class {
   static {
     __name(this, "WriteStream");
@@ -446,10 +446,10 @@ var WriteStream = class {
   }
 };
 
-// node_modules/unenv/dist/runtime/node/internal/process/node-version.mjs
+// ../../../../AppData/Roaming/npm/node_modules/wrangler/node_modules/unenv/dist/runtime/node/internal/process/node-version.mjs
 var NODE_VERSION = "22.14.0";
 
-// node_modules/unenv/dist/runtime/node/internal/process/process.mjs
+// ../../../../AppData/Roaming/npm/node_modules/wrangler/node_modules/unenv/dist/runtime/node/internal/process/process.mjs
 var Process = class _Process extends EventEmitter {
   static {
     __name(this, "Process");
@@ -684,7 +684,7 @@ var Process = class _Process extends EventEmitter {
   _linkedBinding = void 0;
 };
 
-// node_modules/@cloudflare/unenv-preset/dist/runtime/node/process.mjs
+// ../../../../AppData/Roaming/npm/node_modules/wrangler/node_modules/@cloudflare/unenv-preset/dist/runtime/node/process.mjs
 var globalProcess = globalThis["process"];
 var getBuiltinModule = globalProcess.getBuiltinModule;
 var workerdProcess = getBuiltinModule("node:process");
@@ -914,7 +914,7 @@ var _process = {
 };
 var process_default = _process;
 
-// node_modules/wrangler/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-process
+// ../../../../AppData/Roaming/npm/node_modules/wrangler/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-process
 globalThis.process = process_default;
 
 // worker/utils/storage.js
@@ -1237,7 +1237,7 @@ var DEFAULT_RETRY_CONFIG = {
 };
 function sleep(ms, jitter = 0) {
   const actualDelay = ms + Math.random() * jitter;
-  return new Promise((resolve) => setTimeout(resolve, actualDelay));
+  return new Promise((resolve2) => setTimeout(resolve2, actualDelay));
 }
 __name(sleep, "sleep");
 function calculateBackoff(attempt, config2) {
@@ -1626,14 +1626,120 @@ ${JSON.stringify(mergedContext, null, 2)}`
   }
 };
 
+// ../../../../AppData/Roaming/npm/node_modules/wrangler/node_modules/unenv/dist/runtime/node/internal/fs/promises.mjs
+var access = /* @__PURE__ */ notImplemented("fs.access");
+var copyFile = /* @__PURE__ */ notImplemented("fs.copyFile");
+var cp = /* @__PURE__ */ notImplemented("fs.cp");
+var open = /* @__PURE__ */ notImplemented("fs.open");
+var opendir = /* @__PURE__ */ notImplemented("fs.opendir");
+var rename = /* @__PURE__ */ notImplemented("fs.rename");
+var truncate = /* @__PURE__ */ notImplemented("fs.truncate");
+var rm = /* @__PURE__ */ notImplemented("fs.rm");
+var rmdir = /* @__PURE__ */ notImplemented("fs.rmdir");
+var mkdir = /* @__PURE__ */ notImplemented("fs.mkdir");
+var readdir = /* @__PURE__ */ notImplemented("fs.readdir");
+var readlink = /* @__PURE__ */ notImplemented("fs.readlink");
+var symlink = /* @__PURE__ */ notImplemented("fs.symlink");
+var lstat = /* @__PURE__ */ notImplemented("fs.lstat");
+var stat = /* @__PURE__ */ notImplemented("fs.stat");
+var link = /* @__PURE__ */ notImplemented("fs.link");
+var unlink = /* @__PURE__ */ notImplemented("fs.unlink");
+var chmod = /* @__PURE__ */ notImplemented("fs.chmod");
+var lchmod = /* @__PURE__ */ notImplemented("fs.lchmod");
+var lchown = /* @__PURE__ */ notImplemented("fs.lchown");
+var chown = /* @__PURE__ */ notImplemented("fs.chown");
+var utimes = /* @__PURE__ */ notImplemented("fs.utimes");
+var lutimes = /* @__PURE__ */ notImplemented("fs.lutimes");
+var realpath = /* @__PURE__ */ notImplemented("fs.realpath");
+var mkdtemp = /* @__PURE__ */ notImplemented("fs.mkdtemp");
+var writeFile = /* @__PURE__ */ notImplemented("fs.writeFile");
+var appendFile = /* @__PURE__ */ notImplemented("fs.appendFile");
+var readFile = /* @__PURE__ */ notImplemented("fs.readFile");
+var statfs = /* @__PURE__ */ notImplemented("fs.statfs");
+
+// ../../../../AppData/Roaming/npm/node_modules/wrangler/node_modules/unenv/dist/runtime/node/internal/fs/fs.mjs
+function callbackify(fn) {
+  const fnc = /* @__PURE__ */ __name(function(...args) {
+    const cb = args.pop();
+    fn().catch((error3) => cb(error3)).then((val) => cb(void 0, val));
+  }, "fnc");
+  fnc.__promisify__ = fn;
+  fnc.native = fnc;
+  return fnc;
+}
+__name(callbackify, "callbackify");
+var access2 = callbackify(access);
+var appendFile2 = callbackify(appendFile);
+var chown2 = callbackify(chown);
+var chmod2 = callbackify(chmod);
+var copyFile2 = callbackify(copyFile);
+var cp2 = callbackify(cp);
+var lchown2 = callbackify(lchown);
+var lchmod2 = callbackify(lchmod);
+var link2 = callbackify(link);
+var lstat2 = callbackify(lstat);
+var lutimes2 = callbackify(lutimes);
+var mkdir2 = callbackify(mkdir);
+var mkdtemp2 = callbackify(mkdtemp);
+var realpath2 = callbackify(realpath);
+var open2 = callbackify(open);
+var opendir2 = callbackify(opendir);
+var readdir2 = callbackify(readdir);
+var readFile2 = callbackify(readFile);
+var readlink2 = callbackify(readlink);
+var rename2 = callbackify(rename);
+var rm2 = callbackify(rm);
+var rmdir2 = callbackify(rmdir);
+var stat2 = callbackify(stat);
+var symlink2 = callbackify(symlink);
+var truncate2 = callbackify(truncate);
+var unlink2 = callbackify(unlink);
+var utimes2 = callbackify(utimes);
+var writeFile2 = callbackify(writeFile);
+var statfs2 = callbackify(statfs);
+var readFileSync = /* @__PURE__ */ notImplemented("fs.readFileSync");
+
 // worker/src/index.js
+import { resolve } from "node:path";
 var json = /* @__PURE__ */ __name((data, init = {}) => new Response(JSON.stringify(data, null, 2), {
   headers: { "Content-Type": "application/json" },
   ...init
 }), "json");
+function serveStaticFile(pathname) {
+  const contentTypes = {
+    ".html": "text/html; charset=utf-8",
+    ".js": "application/javascript; charset=utf-8",
+    ".css": "text/css; charset=utf-8"
+  };
+  try {
+    let filename;
+    if (pathname === "/" || pathname === "") {
+      filename = "index.html";
+    } else {
+      filename = pathname.startsWith("/") ? pathname.slice(1) : pathname;
+    }
+    const filePath = resolve(process.cwd(), "frontend", filename);
+    const content = readFileSync(filePath, "utf-8");
+    const ext = filename.match(/\.\w+$/)?.[0] || ".html";
+    const contentType = contentTypes[ext] || "text/plain";
+    return new Response(content, {
+      headers: { "Content-Type": contentType }
+    });
+  } catch (e) {
+    return null;
+  }
+}
+__name(serveStaticFile, "serveStaticFile");
 var src_default = {
   async fetch(request, env2, ctx) {
     const url = new URL(request.url);
+    const isApiRoute = url.pathname.startsWith("/analyze") || url.pathname.startsWith("/gameweek/") || url.pathname.startsWith("/execution/");
+    if (!isApiRoute) {
+      const staticResponse = serveStaticFile(url.pathname);
+      if (staticResponse) {
+        return staticResponse;
+      }
+    }
     if (request.method === "POST" && url.pathname === "/analyze") {
       const body = await request.json().catch(() => ({}));
       const { managerId, gameweek, notes } = body;
@@ -1700,7 +1806,7 @@ var src_default = {
   }
 };
 
-// node_modules/wrangler/templates/middleware/middleware-ensure-req-body-drained.ts
+// ../../../../AppData/Roaming/npm/node_modules/wrangler/templates/middleware/middleware-ensure-req-body-drained.ts
 var drainBody = /* @__PURE__ */ __name(async (request, env2, _ctx, middlewareCtx) => {
   try {
     return await middlewareCtx.next(request, env2);
@@ -1718,7 +1824,7 @@ var drainBody = /* @__PURE__ */ __name(async (request, env2, _ctx, middlewareCtx
 }, "drainBody");
 var middleware_ensure_req_body_drained_default = drainBody;
 
-// node_modules/wrangler/templates/middleware/middleware-miniflare3-json-error.ts
+// ../../../../AppData/Roaming/npm/node_modules/wrangler/templates/middleware/middleware-miniflare3-json-error.ts
 function reduceError(e) {
   return {
     name: e?.name,
@@ -1741,14 +1847,14 @@ var jsonError = /* @__PURE__ */ __name(async (request, env2, _ctx, middlewareCtx
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// .wrangler/tmp/bundle-KISlQn/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-9xbJYO/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
 ];
 var middleware_insertion_facade_default = src_default;
 
-// node_modules/wrangler/templates/middleware/common.ts
+// ../../../../AppData/Roaming/npm/node_modules/wrangler/templates/middleware/common.ts
 var __facade_middleware__ = [];
 function __facade_register__(...args) {
   __facade_middleware__.push(...args.flat());
@@ -1773,7 +1879,7 @@ function __facade_invoke__(request, env2, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// .wrangler/tmp/bundle-KISlQn/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-9xbJYO/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;
