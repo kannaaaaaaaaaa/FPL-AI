@@ -1,5 +1,3 @@
-import { withRetry, withCircuitBreaker, classifyHttpError } from "./retry.js";
-
 const BASE = "https://fantasy.premierleague.com/api";
 
 const TTL = {
@@ -10,47 +8,47 @@ const TTL = {
   picks: 60 * 60 * 24,    // 24 hours (picks don't change after deadline)
 };
 
-const RETRY_CONFIG = {
-  maxRetries: 3,
-  initialDelayMs: 1000,
-  maxDelayMs: 10000,
-  backoffMultiplier: 2,
-  jitterMs: 200,
-  timeoutMs: 15000, // 15 seconds per request
-};
+const MAX_RETRIES = 2;
+const RETRY_DELAY_MS = 2000;
 
 async function cachedFetch(env, key, url, ttlSeconds) {
   // Check cache first
   const cached = await env.FPL_CACHE.get(key, "json");
   if (cached) return cached;
 
-  // Fetch with retry and circuit breaker
-  const fetchFn = async () => {
-    const res = await fetch(url, {
-      cf: { cacheTtl: ttlSeconds },
-      signal: AbortSignal.timeout(RETRY_CONFIG.timeoutMs),
-    });
+  let lastError;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const res = await fetch(url, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        },
+        cf: { cacheTtl: ttlSeconds },
+        signal: AbortSignal.timeout(10000),
+      });
 
-    if (!res.ok) {
-      const error = classifyHttpError(
-        res.status,
-        `FPL API failed for ${url}: ${res.status} ${res.statusText}`,
-      );
-      throw error;
+      if (res.status === 503) {
+        throw new Error(`FPL API is currently unavailable (503). The Fantasy Premier League servers may be down for maintenance.`);
+      }
+
+      if (!res.ok) {
+        throw new Error(`FPL API error for ${url}: ${res.status} ${res.statusText}`);
+      }
+
+      const data = await res.json();
+
+      // Cache the result
+      await env.FPL_CACHE.put(key, JSON.stringify(data), { expirationTtl: ttlSeconds });
+      return data;
+    } catch (error) {
+      lastError = error;
+      if (attempt < MAX_RETRIES) {
+        await new Promise((r) => setTimeout(r, RETRY_DELAY_MS * (attempt + 1)));
+      }
     }
+  }
 
-    return res.json();
-  };
-
-  // Execute with retry and circuit breaker
-  const data = await withRetry(
-    () => withCircuitBreaker(fetchFn, "fpl"),
-    RETRY_CONFIG,
-  );
-
-  // Cache the result
-  await env.FPL_CACHE.put(key, JSON.stringify(data), { expirationTtl: ttlSeconds });
-  return data;
+  throw lastError;
 }
 
 /**

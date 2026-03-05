@@ -257,16 +257,26 @@ async function pollExecution(executionId, attempt = 0) {
     const data = await res.json();
 
     // Check execution status
-    if (data.status === "completed" && data.analysis?.status === "completed") {
-      // Fetch full analysis
-      const analysisRes = await fetch(`${apiBase}/gameweek/${data.analysis.id}`);
-      if (analysisRes.ok) {
-        return await analysisRes.json();
+    if (data.status === "completed") {
+      // Try DB record first
+      if (data.analysis?.status === "completed" && data.analysis?.id) {
+        const analysisRes = await fetch(`${apiBase}/gameweek/${data.analysis.id}`);
+        if (analysisRes.ok) {
+          return await analysisRes.json();
+        }
       }
+
+      // Fallback: use workflow output directly
+      if (data.output?.payload) {
+        return { result: data.output.payload };
+      }
+
+      // Workflow completed but no data yet — keep polling briefly
     }
 
     if (data.status === "failed" || data.analysis?.status === "failed") {
-      throw new Error(data.analysis?.errorMessage || "Analysis failed");
+      const errorMsg = data.output?.error || data.analysis?.errorMessage || "Analysis failed";
+      throw new Error(errorMsg);
     }
 
     // Still running - update status and retry
@@ -329,7 +339,8 @@ async function analyze() {
 
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
-      throw new Error(errorData.error || `Request failed: ${res.status}`);
+      const message = [errorData.error, errorData.details].filter(Boolean).join(": ");
+      throw new Error(message || `Request failed: ${res.status}`);
     }
 
     const { executionId } = await res.json();
@@ -355,11 +366,16 @@ async function analyze() {
     console.error("Analysis error:", error);
 
     // Classify error for better UX
-    const isRetryable = !error.message.includes("required") &&
-      !error.message.includes("must be between") &&
-      !error.message.includes("not found");
+    let displayMessage = error.message || "Analysis failed";
+    if (displayMessage.includes("503") || displayMessage.includes("unavailable")) {
+      displayMessage = "FPL servers are currently down for maintenance. Please try again later.";
+    }
 
-    showError(error.message || "Analysis failed", isRetryable);
+    const isRetryable = !displayMessage.includes("required") &&
+      !displayMessage.includes("must be between") &&
+      !displayMessage.includes("not found");
+
+    showError(displayMessage, isRetryable);
   }
 }
 
@@ -371,4 +387,3 @@ function clearResults() {
 }
 
 analyzeBtn.addEventListener("click", analyze);
-

@@ -27,25 +27,44 @@ export default {
     }
 
     if (request.method === "POST" && url.pathname === "/analyze") {
-      const body = await request.json().catch(() => ({}));
-      const { managerId, gameweek, notes } = body;
+      try {
+        const body = await request.json().catch(() => ({}));
+        const { managerId, gameweek, notes } = body;
 
-      if (!managerId || typeof gameweek !== "number") {
-        return json({ error: "managerId and gameweek are required." }, { status: 400 });
+        if (!managerId || typeof gameweek !== "number") {
+          return json({ error: "managerId and gameweek are required." }, { status: 400 });
+        }
+
+        if (!env.ANALYZE_WORKFLOW?.create) {
+          return json(
+            {
+              error: "Workflow binding is unavailable. Check wrangler.toml workflows config and Cloudflare account access.",
+            },
+            { status: 503 },
+          );
+        }
+
+        const payload = { managerId, gameweek, notes: notes ?? "", prompt: SYSTEM_PROMPT };
+        const execution = await env.ANALYZE_WORKFLOW.create({
+          params: payload,
+        });
+
+        return json(
+          {
+            message: "Workflow accepted",
+            executionId: execution.id,
+          },
+          { status: 202 },
+        );
+      } catch (error) {
+        return json(
+          {
+            error: "Failed to start analysis workflow",
+            details: error?.message ?? String(error),
+          },
+          { status: 500 },
+        );
       }
-
-      const payload = { managerId, gameweek, notes: notes ?? "", prompt: SYSTEM_PROMPT };
-      const execution = await env.ANALYZE_WORKFLOW.createExecution({
-        input: payload,
-      });
-
-      return json(
-        {
-          message: "Workflow accepted",
-          executionId: execution.id,
-        },
-        { status: 202 },
-      );
     }
 
     if (request.method === "GET" && url.pathname.startsWith("/gameweek/")) {
@@ -64,22 +83,26 @@ export default {
 
       try {
         // Get execution status from Workflow
-        const execution = await env.ANALYZE_WORKFLOW.get(executionId);
+        const instance = await env.ANALYZE_WORKFLOW.get(executionId);
 
-        if (!execution) {
+        if (!instance) {
           return json({ error: "Execution not found" }, { status: 404 });
         }
 
+        const instanceStatus = await instance.status();
+
         // Normalize Cloudflare Workflow statuses to our standard statuses
-        // CF returns: running, complete, paused, errored, terminated, unknown
+        // CF returns: queued, running, complete, paused, errored, terminated, waiting, unknown
         const statusMap = {
           complete: "completed",
           errored: "failed",
           terminated: "failed",
           paused: "running",
+          queued: "running",
+          waiting: "running",
           unknown: "running",
         };
-        const normalizedStatus = statusMap[execution.status] || execution.status;
+        const normalizedStatus = statusMap[instanceStatus.status] || instanceStatus.status;
 
         // Also fetch the analysis record if available
         const records = await env.DB.prepare(
@@ -89,10 +112,10 @@ export default {
         const record = records.results?.[0];
 
         return json({
-          executionId: execution.id,
+          executionId,
           status: normalizedStatus,
-          rawStatus: execution.status,
-          createdAt: execution.createdAt,
+          rawStatus: instanceStatus.status,
+          output: instanceStatus.output ?? null,
           analysis: record ? {
             id: record.id,
             managerId: record.manager_id,

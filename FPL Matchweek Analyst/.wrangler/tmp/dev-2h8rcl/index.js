@@ -1189,153 +1189,6 @@ Return the JSON object directly without any wrapper or formatting.`;
 // worker/workflows/analyze.js
 import { WorkflowEntrypoint } from "cloudflare:workers";
 
-// worker/utils/retry.js
-var RetryableError = class extends Error {
-  static {
-    __name(this, "RetryableError");
-  }
-  constructor(message, statusCode = null, retryAfter = null) {
-    super(message);
-    this.name = "RetryableError";
-    this.statusCode = statusCode;
-    this.retryAfter = retryAfter;
-    this.retryable = true;
-  }
-};
-var PermanentError = class extends Error {
-  static {
-    __name(this, "PermanentError");
-  }
-  constructor(message, statusCode = null) {
-    super(message);
-    this.name = "PermanentError";
-    this.statusCode = statusCode;
-    this.retryable = false;
-  }
-};
-function classifyHttpError(status, message = "") {
-  if (status >= 500 || status === 429 || status === 408) {
-    return new RetryableError(message, status);
-  }
-  if (message.includes("ECONNREFUSED") || message.includes("ETIMEDOUT") || message.includes("DNS")) {
-    return new RetryableError(message);
-  }
-  if (status >= 400 && status < 500) {
-    return new PermanentError(message, status);
-  }
-  return new RetryableError(message, status);
-}
-__name(classifyHttpError, "classifyHttpError");
-var DEFAULT_RETRY_CONFIG = {
-  maxRetries: 3,
-  initialDelayMs: 1e3,
-  maxDelayMs: 1e4,
-  backoffMultiplier: 2,
-  jitterMs: 100,
-  timeoutMs: 3e4
-  // 30 seconds
-};
-function sleep(ms, jitter = 0) {
-  const actualDelay = ms + Math.random() * jitter;
-  return new Promise((resolve) => setTimeout(resolve, actualDelay));
-}
-__name(sleep, "sleep");
-function calculateBackoff(attempt, config2) {
-  const delay = Math.min(
-    config2.initialDelayMs * Math.pow(config2.backoffMultiplier, attempt),
-    config2.maxDelayMs
-  );
-  return delay;
-}
-__name(calculateBackoff, "calculateBackoff");
-async function withRetry(fn, config2 = {}) {
-  const cfg = { ...DEFAULT_RETRY_CONFIG, ...config2 };
-  let lastError;
-  for (let attempt = 0; attempt <= cfg.maxRetries; attempt++) {
-    try {
-      const result = await withTimeout(fn(), cfg.timeoutMs);
-      return result;
-    } catch (error3) {
-      lastError = error3;
-      const classified = error3.retryable !== void 0 ? error3 : classifyHttpError(error3.statusCode || 0, error3.message);
-      if (!classified.retryable) {
-        throw classified;
-      }
-      if (attempt === cfg.maxRetries) {
-        throw new PermanentError(
-          `Failed after ${cfg.maxRetries + 1} attempts: ${classified.message}`,
-          classified.statusCode
-        );
-      }
-      const backoffDelay = calculateBackoff(attempt, cfg);
-      await sleep(backoffDelay, cfg.jitterMs);
-      console.warn(`Retry attempt ${attempt + 1}/${cfg.maxRetries} after ${backoffDelay}ms: ${error3.message}`);
-    }
-  }
-  throw lastError;
-}
-__name(withRetry, "withRetry");
-async function withTimeout(promise, timeoutMs) {
-  return Promise.race([
-    promise,
-    new Promise(
-      (_, reject) => setTimeout(
-        () => reject(new RetryableError(`Operation timed out after ${timeoutMs}ms`, 408)),
-        timeoutMs
-      )
-    )
-  ]);
-}
-__name(withTimeout, "withTimeout");
-var CircuitBreaker = class {
-  static {
-    __name(this, "CircuitBreaker");
-  }
-  constructor(config2 = {}) {
-    this.failureThreshold = config2.failureThreshold || 5;
-    this.resetTimeoutMs = config2.resetTimeoutMs || 6e4;
-    this.state = "CLOSED";
-    this.failures = 0;
-    this.nextAttempt = Date.now();
-  }
-  async execute(fn) {
-    if (this.state === "OPEN") {
-      if (Date.now() < this.nextAttempt) {
-        throw new PermanentError("Circuit breaker is OPEN");
-      }
-      this.state = "HALF_OPEN";
-    }
-    try {
-      const result = await fn();
-      this.onSuccess();
-      return result;
-    } catch (error3) {
-      this.onFailure();
-      throw error3;
-    }
-  }
-  onSuccess() {
-    this.failures = 0;
-    this.state = "CLOSED";
-  }
-  onFailure() {
-    this.failures++;
-    if (this.failures >= this.failureThreshold) {
-      this.state = "OPEN";
-      this.nextAttempt = Date.now() + this.resetTimeoutMs;
-    }
-  }
-};
-var circuitBreakers = {
-  fpl: new CircuitBreaker({ failureThreshold: 5, resetTimeoutMs: 6e4 }),
-  ai: new CircuitBreaker({ failureThreshold: 3, resetTimeoutMs: 3e4 })
-};
-async function withCircuitBreaker(fn, service = "default") {
-  const breaker = circuitBreakers[service] || circuitBreakers.fpl;
-  return breaker.execute(fn);
-}
-__name(withCircuitBreaker, "withCircuitBreaker");
-
 // worker/utils/fpl.js
 var BASE = "https://fantasy.premierleague.com/api";
 var TTL = {
@@ -1350,38 +1203,38 @@ var TTL = {
   picks: 60 * 60 * 24
   // 24 hours (picks don't change after deadline)
 };
-var RETRY_CONFIG = {
-  maxRetries: 3,
-  initialDelayMs: 1e3,
-  maxDelayMs: 1e4,
-  backoffMultiplier: 2,
-  jitterMs: 200,
-  timeoutMs: 15e3
-  // 15 seconds per request
-};
+var MAX_RETRIES = 2;
+var RETRY_DELAY_MS = 2e3;
 async function cachedFetch(env2, key, url, ttlSeconds) {
   const cached = await env2.FPL_CACHE.get(key, "json");
   if (cached) return cached;
-  const fetchFn = /* @__PURE__ */ __name(async () => {
-    const res = await fetch(url, {
-      cf: { cacheTtl: ttlSeconds },
-      signal: AbortSignal.timeout(RETRY_CONFIG.timeoutMs)
-    });
-    if (!res.ok) {
-      const error3 = classifyHttpError(
-        res.status,
-        `FPL API failed for ${url}: ${res.status} ${res.statusText}`
-      );
-      throw error3;
+  let lastError;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const res = await fetch(url, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        },
+        cf: { cacheTtl: ttlSeconds },
+        signal: AbortSignal.timeout(1e4)
+      });
+      if (res.status === 503) {
+        throw new Error(`FPL API is currently unavailable (503). The Fantasy Premier League servers may be down for maintenance.`);
+      }
+      if (!res.ok) {
+        throw new Error(`FPL API error for ${url}: ${res.status} ${res.statusText}`);
+      }
+      const data = await res.json();
+      await env2.FPL_CACHE.put(key, JSON.stringify(data), { expirationTtl: ttlSeconds });
+      return data;
+    } catch (error3) {
+      lastError = error3;
+      if (attempt < MAX_RETRIES) {
+        await new Promise((r) => setTimeout(r, RETRY_DELAY_MS * (attempt + 1)));
+      }
     }
-    return res.json();
-  }, "fetchFn");
-  const data = await withRetry(
-    () => withCircuitBreaker(fetchFn, "fpl"),
-    RETRY_CONFIG
-  );
-  await env2.FPL_CACHE.put(key, JSON.stringify(data), { expirationTtl: ttlSeconds });
-  return data;
+  }
+  throw lastError;
 }
 __name(cachedFetch, "cachedFetch");
 async function getBootstrap(env2) {
@@ -1486,21 +1339,40 @@ async function getAnalysisContext(env2, managerId, gameweek) {
 __name(getAnalysisContext, "getAnalysisContext");
 
 // worker/workflows/analyze.js
+var STEP_CONFIG = {
+  db: {
+    retries: { limit: 2, delay: "2 seconds", backoff: "constant" },
+    timeout: "30 seconds"
+  },
+  fplFetch: {
+    retries: { limit: 1, delay: "5 seconds", backoff: "linear" },
+    timeout: "2 minutes"
+  },
+  llm: {
+    retries: { limit: 2, delay: "5 seconds", backoff: "linear" },
+    timeout: "3 minutes"
+  },
+  parse: {
+    retries: { limit: 1, delay: "1 second", backoff: "constant" },
+    timeout: "30 seconds"
+  }
+};
 var AnalyzeWorkflow = class extends WorkflowEntrypoint {
   static {
     __name(this, "AnalyzeWorkflow");
   }
   /**
-   * @param {{ managerId: string; gameweek: number; notes?: string }} event
+   * @param {WorkflowEvent<{ managerId: string; gameweek: number; notes?: string }>} event
    */
   async run(event, step) {
-    const { managerId, gameweek, notes = "" } = event;
+    const { managerId, gameweek, notes = "" } = event.payload;
     const recordId = `${managerId}-${gameweek}`;
-    const executionId = this.env.ANALYZE_WORKFLOW?.id || crypto.randomUUID();
+    const executionId = event.id;
     const startTime = Date.now();
-    await step.run(
+    await step.do(
       "init-record",
-      () => createAnalysisRecord(this.env.DB, {
+      STEP_CONFIG.db,
+      async () => createAnalysisRecord(this.env.DB, {
         managerId,
         gameweek,
         executionId,
@@ -1510,23 +1382,23 @@ var AnalyzeWorkflow = class extends WorkflowEntrypoint {
       })
     );
     try {
-      await step.run(
+      await step.do(
         "mark-running",
-        () => updateAnalysisStatus(this.env.DB, recordId, "running")
+        STEP_CONFIG.db,
+        async () => updateAnalysisStatus(this.env.DB, recordId, "running")
       );
-      const analysisContext = await step.run(
+      const analysisContext = await step.do(
         "fetch-fpl-data",
-        () => getAnalysisContext(this.env, managerId, gameweek)
+        STEP_CONFIG.fplFetch,
+        async () => getAnalysisContext(this.env, managerId, gameweek)
       );
-      const mergedContext = await step.run("merge-inputs", async () => {
-        return {
-          ...analysisContext,
-          user_notes: notes
-        };
-      });
+      const mergedContext = {
+        ...analysisContext,
+        user_notes: notes
+      };
       const aiStartTime = Date.now();
-      const aiResult = await step.run("call-llm", async () => {
-        const response = await this.env.AI.run("@cf/meta/llama-3.3-70b-instruct", {
+      const aiResult = await step.do("call-llm", STEP_CONFIG.llm, async () => {
+        const response = await this.env.AI.run("@cf/meta/llama-3.1-70b-instruct", {
           messages: [
             { role: "system", content: SYSTEM_PROMPT },
             {
@@ -1535,29 +1407,26 @@ var AnalyzeWorkflow = class extends WorkflowEntrypoint {
 ${JSON.stringify(mergedContext, null, 2)}`
             }
           ],
-          max_output_tokens: 800
+          max_tokens: 2048
         });
         return response;
       });
       const aiLatency = Date.now() - aiStartTime;
-      const parsed = await step.run("parse-ai-output", async () => {
-        try {
-          let result;
-          if (typeof aiResult?.response === "string") {
-            result = JSON.parse(aiResult.response);
-          } else if (aiResult?.response && typeof aiResult.response === "object") {
-            result = aiResult.response;
-          } else if (typeof aiResult?.result === "string") {
-            result = JSON.parse(aiResult.result);
-          } else {
-            throw new Error("No valid response field found in AI result");
-          }
-          return result;
-        } catch (error3) {
-          throw new Error(`Failed to parse AI output: ${error3.message}`);
+      const parsed = await step.do("parse-ai-output", STEP_CONFIG.parse, async () => {
+        let raw = aiResult?.response ?? aiResult?.result;
+        if (!raw) {
+          throw new Error("No valid response field found in AI result");
         }
+        if (typeof raw === "string") {
+          raw = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+          return JSON.parse(raw);
+        }
+        if (typeof raw === "object") {
+          return raw;
+        }
+        throw new Error("Unexpected AI response format");
       });
-      const validated = await step.run("validate-and-repair", async () => {
+      const validated = await step.do("validate-and-repair", STEP_CONFIG.parse, async () => {
         const validation = validateOutput(parsed);
         if (validation.valid) {
           return { output: parsed, repaired: false, errors: [] };
@@ -1575,15 +1444,16 @@ ${JSON.stringify(mergedContext, null, 2)}`
           `AI output validation failed: ${validation.errors.join(", ")}. Repair also failed: ${revalidation.errors.join(", ")}`
         );
       });
-      await step.run(
+      await step.do(
         "persist-success",
-        () => createAnalysisRecord(this.env.DB, {
+        STEP_CONFIG.db,
+        async () => createAnalysisRecord(this.env.DB, {
           managerId,
           gameweek,
           executionId,
           status: "completed",
           completedAt: (/* @__PURE__ */ new Date()).toISOString(),
-          modelName: "@cf/meta/llama-3.3-70b-instruct",
+          modelName: "@cf/meta/llama-3.1-70b-instruct",
           tokensInput: aiResult?.meta?.tokens_input,
           tokensOutput: aiResult?.meta?.tokens_output,
           latencyMs: aiLatency,
@@ -1610,9 +1480,10 @@ ${JSON.stringify(mergedContext, null, 2)}`
         }
       };
     } catch (error3) {
-      await step.run(
+      await step.do(
         "persist-failure",
-        () => createAnalysisRecord(this.env.DB, {
+        STEP_CONFIG.db,
+        async () => createAnalysisRecord(this.env.DB, {
           managerId,
           gameweek,
           executionId,
@@ -1641,22 +1512,40 @@ var src_default = {
       }
     }
     if (request.method === "POST" && url.pathname === "/analyze") {
-      const body = await request.json().catch(() => ({}));
-      const { managerId, gameweek, notes } = body;
-      if (!managerId || typeof gameweek !== "number") {
-        return json({ error: "managerId and gameweek are required." }, { status: 400 });
+      try {
+        const body = await request.json().catch(() => ({}));
+        const { managerId, gameweek, notes } = body;
+        if (!managerId || typeof gameweek !== "number") {
+          return json({ error: "managerId and gameweek are required." }, { status: 400 });
+        }
+        if (!env2.ANALYZE_WORKFLOW?.create) {
+          return json(
+            {
+              error: "Workflow binding is unavailable. Check wrangler.toml workflows config and Cloudflare account access."
+            },
+            { status: 503 }
+          );
+        }
+        const payload = { managerId, gameweek, notes: notes ?? "", prompt: SYSTEM_PROMPT };
+        const execution = await env2.ANALYZE_WORKFLOW.create({
+          params: payload
+        });
+        return json(
+          {
+            message: "Workflow accepted",
+            executionId: execution.id
+          },
+          { status: 202 }
+        );
+      } catch (error3) {
+        return json(
+          {
+            error: "Failed to start analysis workflow",
+            details: error3?.message ?? String(error3)
+          },
+          { status: 500 }
+        );
       }
-      const payload = { managerId, gameweek, notes: notes ?? "", prompt: SYSTEM_PROMPT };
-      const execution = await env2.ANALYZE_WORKFLOW.createExecution({
-        input: payload
-      });
-      return json(
-        {
-          message: "Workflow accepted",
-          executionId: execution.id
-        },
-        { status: 202 }
-      );
     }
     if (request.method === "GET" && url.pathname.startsWith("/gameweek/")) {
       const [, , gameweekId] = url.pathname.split("/");
@@ -1669,27 +1558,30 @@ var src_default = {
       const [, , executionId] = url.pathname.split("/");
       if (!executionId) return json({ error: "Missing execution identifier" }, { status: 400 });
       try {
-        const execution = await env2.ANALYZE_WORKFLOW.get(executionId);
-        if (!execution) {
+        const instance = await env2.ANALYZE_WORKFLOW.get(executionId);
+        if (!instance) {
           return json({ error: "Execution not found" }, { status: 404 });
         }
+        const instanceStatus = await instance.status();
         const statusMap = {
           complete: "completed",
           errored: "failed",
           terminated: "failed",
           paused: "running",
+          queued: "running",
+          waiting: "running",
           unknown: "running"
         };
-        const normalizedStatus = statusMap[execution.status] || execution.status;
+        const normalizedStatus = statusMap[instanceStatus.status] || instanceStatus.status;
         const records = await env2.DB.prepare(
           `SELECT * FROM gameweek_analysis WHERE execution_id = ?1 LIMIT 1`
         ).bind(executionId).all();
         const record = records.results?.[0];
         return json({
-          executionId: execution.id,
+          executionId,
           status: normalizedStatus,
-          rawStatus: execution.status,
-          createdAt: execution.createdAt,
+          rawStatus: instanceStatus.status,
+          output: instanceStatus.output ?? null,
           analysis: record ? {
             id: record.id,
             managerId: record.manager_id,
@@ -1756,7 +1648,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env2, _ctx, middlewareCtx
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// .wrangler/tmp/bundle-3S68uV/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-AIEE4Q/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -1788,7 +1680,7 @@ function __facade_invoke__(request, env2, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// .wrangler/tmp/bundle-3S68uV/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-AIEE4Q/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;
